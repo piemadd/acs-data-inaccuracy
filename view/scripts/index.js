@@ -66,8 +66,7 @@ map.on('load', async () => {
   fetch('/data/counties.json')
     .then(response => response.json())
     .then(countyData => {
-
-      fetch('/data/cb_2018_us_county_500k.zip.geojson')
+      fetch('/data/geo.json')
         .then(response => response.json())
         .then(mapData => {
           const cleanedData = {
@@ -88,7 +87,7 @@ map.on('load', async () => {
 
           map.addSource('counties', {
             type: 'geojson',
-            data: cleanedData
+            data: cleanedData,
           });
           map.addLayer({
             id: 'counties',
@@ -112,8 +111,9 @@ map.on('load', async () => {
                   [1, 0.8],
                   [10000, 0.8]
                 ]
-              }
-            }
+              },
+            },
+            allowOverlap: true,
           });
 
           map.on('click', 'counties', function (e) {

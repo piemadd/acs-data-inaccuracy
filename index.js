@@ -1,6 +1,63 @@
 const { parse } = require('csv-parse/sync');
 const fs = require('fs');
 
+//douglas-peucker algorithm
+const simplify = (geojson) => {
+  // for each point, simplify the coordinates up to 5 decimal places
+  const simplified = geojson.features.map((feature) => {
+    const coordinates = feature.geometry.coordinates.map((coordinate) => {
+      return coordinate.map((c) => {
+        return c.map((cc) => Number(cc.toFixed(5)))
+      });
+    });
+    return {
+      ...feature,
+      geometry: {
+        ...feature.geometry,
+        coordinates,
+      },
+    };
+  });
+
+  // remove duplicate points
+  const deduped = simplified.map((feature) => {
+    const coordinates = feature.geometry.coordinates.map((coordinate) => {
+      return coordinate.filter((c, i, a) => {
+        return i === 0 || a[i - 1][0] !== c[0] || a[i - 1][1] !== c[1];
+      });
+    });
+    return {
+      ...feature,
+      geometry: {
+        ...feature.geometry,
+        coordinates,
+      },
+    };
+  });
+
+  // remove points that are too close together
+  const cleaned = deduped.map((feature) => {
+    const coordinates = feature.geometry.coordinates.map((coordinate) => {
+      return coordinate.filter((c, i, a) => {
+        return i === 0 || Math.abs(a[i - 1][0] - c[0]) > 0.00001 || Math.abs(a[i - 1][1] - c[1]) > 0.00001;
+      });
+    });
+    return {
+      ...feature,
+      geometry: {
+        ...feature.geometry,
+        coordinates,
+      },
+    };
+  });
+
+  return {
+    ...geojson,
+    features: cleaned,
+  };
+};
+
+
 const transform = (row, keys) => {
   const transformed = {};
   Object.keys(keys).forEach((key) => {
@@ -95,3 +152,26 @@ Object.keys(counties).forEach((key) => {
 });
 
 fs.writeFileSync('./view/data/counties.json', JSON.stringify(counties, null, 2));
+
+const geo = JSON.parse(fs.readFileSync('./data/input.geojson', 'utf8'));
+console.log(geo)
+
+const final = {
+  type: 'FeatureCollection',
+  bbox: geo.bbox,
+  features: geo.features.map((feature) => {
+    return {
+      ...feature,
+      geometry: {
+        ...feature.geometry,
+        coordinates: feature.geometry.coordinates.map((coordinateArray) => {
+          return coordinateArray.map((coordinate) => {
+            return coordinate.map((c) => Number(c.toFixed(5)));
+          });
+        }),
+      }
+    }
+  })
+}
+
+fs.writeFileSync('./view/data/geo.json', JSON.stringify(final));
