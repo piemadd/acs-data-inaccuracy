@@ -1,6 +1,14 @@
 //let baseMapStyle = mapStyle.layers;
 let baseMapStyle = baseStyle;
 
+const formatNumber = (number) => {
+  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+const formatPercent = (number) => {
+  return `${number.toFixed(2)}%`;
+};
+
 var map = new maplibregl.Map({
   container: 'map',
   hash: true,
@@ -106,6 +114,13 @@ map.on('load', async () => {
                 ]
               }
             }
+          });
+
+          map.on('click', 'counties', function (e) {
+            new maplibregl.Popup()
+              .setLngLat(e.lngLat)
+              .setHTML(`${e.features[0].properties.name}<br/>2020 ACS count vs 2020 Census count:<br/>${formatNumber(e.features[0].properties.off2020)}<br/>2020 ACS percent difference of 2020 Census count:<br/>${formatPercent(e.features[0].properties.diffACSPercent)}`)
+              .addTo(map);
           });
 
 
